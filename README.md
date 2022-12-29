@@ -1,3 +1,5 @@
+![All tests](https://github.com/bitspittle/racketeer/actions/workflows/gradle-test.yml/badge.svg)
+
 # limp 
 
 This project implements a minimal, dynamic, Lisp-inspired toy language that works in a Kotlin multiplatform context.
