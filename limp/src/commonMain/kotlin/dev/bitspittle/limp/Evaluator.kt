@@ -109,7 +109,7 @@ class Evaluator private constructor(private val transients: Map<String, Any>, pr
                     throw ex
                 }
                 catch (ex: Exception) {
-                    throw EvaluationException(identExpr.ctx, "Method \"${identExpr.name}\" threw an exception while trying to run:\n> ${ex.message}", cause = ex)
+                    throw EvaluationException(identExpr.ctx, "Method \"${identExpr.name}\" threw an exception while trying to run:\n  ${ex.message}", cause = ex)
                 }
             }
             ?: throw EvaluationException(identExpr.ctx, "Could not resolve identifier \"${identExpr.name}\" as either a variable or a method.")

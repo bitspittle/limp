@@ -13,6 +13,31 @@ $ ./gradlew :limp-interpreter:installDist
 $ ./limp-interpreter/build/install/limp-interpreter/bin/limp-interpreter
 ```
 
+Example run:
+```bash
+> + 5 10
+15
+> * 5 - 25 15
+50
+> + 10 - 20 / 30 0
+
+Method "/" threw an exception while trying to run:
+  Divide by 0
+
+  Error occured here:
+
+  + 10 - 20 / 30 0
+            ^
+
+> take --from 'back (.. 1 10) 3
+[8, 9, 10]
+
+> set '$test 123
+> $test
+123
+> quit
+```
+
 ## Language
 
 ### Expressions

@@ -22,7 +22,7 @@ private fun createCodeErrorMessage(code: String, index: Int, length: Int, msg: S
 """
 $msg
 
-Error occurred here:
+  Error occurred here:
 
   ${code.replace("\n", " ").replace("\t", " ")}
   ${" ".repeat(index) + "^".repeat(length)}
