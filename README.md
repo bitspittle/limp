@@ -1,6 +1,6 @@
 ![All tests](https://github.com/bitspittle/limp/actions/workflows/gradle-test.yml/badge.svg)
 
-# limp 
+# Limp
 
 This project implements a minimal, dynamic, Lisp-inspired toy language that works in a Kotlin multiplatform context.
 
@@ -100,8 +100,8 @@ An environment is a scoped collection of methods, variables, and converters.
 
 It is trivial to construct one: `val env = Environment()`.
 
-The environment can be used to look up variables and methods by name as well as attempt to convert values (since as a
-dynamic language, all input values come in as `Any?` initially).
+An environment can be used to look up variables and methods by name as well as attempt to convert values (since as a
+dynamic language, all input values come in as `Any` initially).
 
 When constructed, a new environment is totally empty, but you can use the provided utility method,
 `Environment.installDefaults()`, to add a bunch of useful logic, math, and other generally helpful behavior. (You
@@ -112,7 +112,7 @@ explicitly designed for your application.
 
 ### Method
 
-You can define methods by implementing a `Method` base class.
+You can define methods by subclassing the `Method` base class.
 
 A method is some logic, tagged with a name and specifying the number of arguments it can consume.
 
@@ -131,15 +131,15 @@ class AddMethod : Method("+", 2) {
 
 #### consumeRest
 
-A method can additionally be configured to accept optional parameters as well as to consume all remaining arguments in
-the expression. The latter is useful for a method that can take a dynamic number of arguments, say a method like
-`(list 1 2 3 4 5 6)`.
+A method can additionally be configured to consume all remaining arguments in the expression. The latter is useful for a
+method that can take a dynamic number of arguments, say a method like `(list 1 2 3 4 5 6)`.
 
 ```kotlin
-// By passing in `consumeRest = true`, the `rest` parameter to the `invoke` method will be filled with values (if any).
+// By passing in 0 for the number of arguments and `consumeRest = true`, this method takes no fixed arguments and then
+// receives any remaining parameters via the `rest` parameter in the `invoke` method.
 class ListMethod : Method("list", 0, consumeRest = true) {
     override suspend fun invoke(/*...*/ rest: List<Any>): Any {
-        // Return a copy of the list; the originally passed in list will be collected
+        // Return a copy of the list; don't assume the originally passed in list won't be modified by Limp
         return rest.toList()
     }
 }
@@ -150,11 +150,11 @@ class ListMethod : Method("list", 0, consumeRest = true) {
 One way that Limp differs from Lisp is support for optional parameters in methods. These are named parameters prefixed
 by `--`.
 
-For example, the `take` method receives a list and takes *n* elements from it, essentially making a copy of some subset
-of the list. It *also* allows you to specify where those items are taken from, using the `--from` parameter. If not
-explicitly specified, the method takes the items from the front.
+For example, the `take` method receives a list and a count and takes *count* elements from the list. This essentially
+makes a copy of some subset of the list.
 
-
+The method also allows you to specify where those items are taken from, using the `--from` optional parameter. If not
+explicitly specified, the method takes items from the front.
 
 ```kotlin
 enum class ListStrategy {
@@ -198,7 +198,7 @@ A converter is some logic to automatically convert a value of one type into anot
 make some of your methods a bit more flexible.
 
 For example, if you have a method that takes in a String, but it gets passed a single character, you can create a
-converter that converts non-list items into a singleton list for you on the fly.
+converter that converts characters into Strings of length one:
 
 ```kotlin
 class CharToStringConverter : Converter<String>(String::class) {
@@ -214,26 +214,27 @@ Then, in your method, if you have such a converter added to the environment, the
 val str = env.expectConvert<String>(params[0])
 ```
 
-will pass `params[0]` through if it's already a `String`, will convert it into a `String` if it's a `Char`, or an
-exception will get thrown if it's another type (and no other relevant converters are found)
+will handle `params[0]` both if it's a `String` (at which point it gets passed through as is) or a `Char` (which gets
+converted to a `String`). An exception with an informative message will get thrown if it's another type (assuming no
+other relevant converters are installed).
 
 You should be careful with abusing converters, however, as if there are too many, an unexpected conversion might happen
 behind your back.
 
 ### Scope
 
-Earlier, we wrote that environments are *scoped*. 
+Earlier, we wrote that environments are *scoped*.
 
 What this means is you can use `pushScope` (and `popScope`) at any point to introduce (and later remove) a new
 local scope. All methods, variables, and converters registered while this scope is active will be discarded if it is
 ever removed.
 
 There is also a convenience `scoped` method that handles calling `pushScope` and `popScope` for you (even if an
-exception gets thrown in the middle).
+exception gets thrown in the middle). Using it is preferred over calling push and pop directly.
 
-Scoping is a very useful feature when you are implementing the logic of a method that wants to support type conversions
-that shouldn't be added globally. Recalling the `CharToStringConverter` example from the previous section, here's how
-the `LowerMethod` is implemented:
+Scoping is a very useful feature when you are implementing the logic of a method that wants to support hyper-local type
+conversions. Recalling the `CharToStringConverter` example from the previous section, here's how the `LowerMethod`
+(which converts strings to their lowercase version) is implemented:
 
 ```kotlin
 class LowerMethod : Method("lower", 1) {
@@ -251,10 +252,10 @@ class LowerMethod : Method("lower", 1) {
 
 Limp defines a special character, called the `Placeholder`, represented by `_`.
 
-On its own, it is an inert thing, but you can define methods which check if a Placeholder was passed in as an argument.
-If so, you could use it as an indicator that the user wants to use some default value.
+On its own, it is an inert thing, but you can define methods which check if a `Placeholder` was passed in as an
+argument. If so, it should indicate that the user wants to use some reasonable, default value.
 
-Limp also provides a `PlacholderConverter` class you can use to accomlish this behavior in your own method.
+Limp also provides a `PlacholderConverter` class you can use to accomplish this default behavior in your own method.
 
 For example, the `IntRange` method uses this to allow people to shortcut passing in an upper bound value:
 
@@ -272,14 +273,14 @@ class IntRangeMethod : Method("..", 2) {
 }
 ```
 
-With this placeholder in place, users can express they want a range but don't care about its maximum value. Using
-`.. 5 _` becomes a shorthand syntax allowing you to avoid writing something hacky like `.. 5 99999` (or
-`.. 5 $MAX_INT_VALUE` if you end up defining such a value yourself in your own Limp environment).
+With this placeholder in place, users can express they want a range with an upper bound as high as possible. Using
+`.. 5 _` becomes a shorthand syntax allowing you to avoid writing something hacky like `.. 5 99999` or something
+more verbose like `.. 5 (size $some-list)`.
 
 ### Evaluator
 
-An evaluator is a class which is responsible for taking a code statement and an accompanying environment and processing
-the two together to produce a result.
+An evaluator is a class which is responsible for taking a code statement and an accompanying environment, and
+then processing the two together to produce a result.
 
 Most of the time you can just instance an evaluator anywhere you have an environment and fire its `evaluate` method:
 
@@ -290,10 +291,11 @@ evaluator.evaluate(env, "+ 1 2") // returns 3 (as `Any`)
 ```
 
 This will both parse the code AND run through the processed result, pulling values out of and writing others back into
-the environment as it goes along. If it fails at any point, it will throw an `EvaluationException` explaining what went
-wrong.
+the environment as it goes along (for example, if it encounters the `set` method).
 
-#### Parsing Expressions
+If it fails at any point, it will throw an `EvaluationException` explaining what went wrong.
+
+#### Pre-parsing expressions
 
 Although evaluators handle parsing for you, it's trivial to parse a limp expression on your own. Just use the
 `Expr.parse` method:
@@ -308,9 +310,9 @@ again.
 
 This change is unlikely to matter too much in most applications -- if performance is *that* critical for you, you
 probably should look elsewhere for better gains -- but it can be useful to compile all your code upfront, so that an
-accidental syntax error will be caught at startup time instead of hours later at runtime.
+accidental syntax error will be caught at startup time rather than hours later at runtime.
 
-### Code Examples
+### Code examples
 
 Bringing everything together:
 
@@ -328,9 +330,9 @@ assertThat(result).isEqualTo(12)
 // Defining a method
 val env = Environment()
 env.add(object : Method("concat", 2) {
-   override suspend fun invoke(env: Environment, params: List<Value>, rest: List<Value>): Value {
-       return env.expectConvert<String>(params[0]) + env.expectConvert<String>(params[1])
-   }
+    override suspend fun invoke(env: Environment, params: List<Value>, rest: List<Value>): Value {
+        return env.expectConvert<String>(params[0]) + env.expectConvert<String>(params[1])
+    }
 })
 
 val evaluator = Evaluator()
@@ -345,11 +347,11 @@ val env = Environment()
 // greeting "Joe" # Returns "Hello Joe"
 // greeting _ # Returns "Hello World"
 env.add(object : Method("greeting", 1) {
-   override suspend fun invoke(env: Environment, params: List<Value>, optionals: Map<String, Value>, rest: List<Value>): Value {
-       return env.scoped {
-           env.add(PlaceholderConverter("World"))
-           "Hello " + env.expectConvert<String>(params[0])
-       }
-   }
+    override suspend fun invoke(env: Environment, params: List<Value>, optionals: Map<String, Value>, rest: List<Value>): Value {
+        return env.scoped {
+            env.add(PlaceholderConverter("World"))
+            "Hello " + env.expectConvert<String>(params[0])
+        }
+    }
 })
 ```
