@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "dev.bitspittle.limp"
-version = "0.5-SNAPSHOT"
+version = libs.versions.limp.lang
 
 repositories {
     maven("https://us-central1-maven.pkg.dev/varabyte-repos/public")

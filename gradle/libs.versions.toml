@@ -1,6 +1,8 @@
 [versions]
 kotlin = "1.7.20"
 kotlinx-coroutines = "1.6.1"
+limp-lang = "0.5.0"
+limp-interpreter = "0.3.0"
 truthish = "0.6.2"
 
 [libraries]

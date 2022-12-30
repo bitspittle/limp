@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "dev.bitspittle.limp.interpreter"
-version = "0.3-SNAPSHOT"
+version = libs.versions.limp.interpreter
 
 dependencies {
     implementation(libs.kotlinx.coroutines.core)
