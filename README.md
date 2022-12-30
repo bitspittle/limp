@@ -1,4 +1,4 @@
-![All tests](https://github.com/bitspittle/racketeer/actions/workflows/gradle-test.yml/badge.svg)
+![All tests](https://github.com/bitspittle/limp/actions/workflows/gradle-test.yml/badge.svg)
 
 # limp 
 
