@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    `maven-publish`
 }
 
 group = "dev.bitspittle.limp"
@@ -42,6 +43,15 @@ kotlin {
             dependencies {
                 implementation(libs.truthish.js)
             }
+        }
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            group = project.group
+            version = libs.versions.limp.lang.get()
         }
     }
 }
