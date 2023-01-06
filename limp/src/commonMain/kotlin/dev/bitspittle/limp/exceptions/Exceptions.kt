@@ -19,8 +19,7 @@ abstract class LimpException(msg: String, cause: Throwable? = null): Exception(m
  */
 private fun createCodeErrorMessage(code: String, index: Int, length: Int, msg: String) =
     // NOTE: KEEP THE TEXT LEFT JUSTIFIED, BECAUSE $msg MAY HAVE A NEWLINE IN IT, WHICH SCREWS UP INDENTATION
-"""
-$msg
+"""$msg
 
   Error occurred here:
 
