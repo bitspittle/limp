@@ -3,7 +3,7 @@ package dev.bitspittle.limp.exceptions
 import dev.bitspittle.limp.parser.ParserContext
 import dev.bitspittle.limp.types.ExprContext
 
-abstract class LispishException(msg: String, cause: Throwable? = null): Exception(msg, cause)
+abstract class LimpException(msg: String, cause: Throwable? = null): Exception(msg, cause)
 
 /**
  * Message will look something like:
@@ -28,12 +28,12 @@ $msg
   ${" ".repeat(index) + "^".repeat(length)}
 """
 
-class ParseException(val ctx: ParserContext, length: Int, val title: String, cause: Throwable? = null): LispishException(
+class ParseException(val ctx: ParserContext, length: Int, val title: String, cause: Throwable? = null): LimpException(
     createCodeErrorMessage(ctx.text, ctx.startIndex, length, title), cause
 ) {
     constructor(ctx: ParserContext, msg: String): this(ctx, length = 1, msg)
 }
 
-class EvaluationException(val ctx: ExprContext, val title: String, cause: Throwable? = null): LispishException(
+class EvaluationException(val ctx: ExprContext, val title: String, cause: Throwable? = null): LimpException(
     createCodeErrorMessage(ctx.code, ctx.start, ctx.length, title), cause
 )
