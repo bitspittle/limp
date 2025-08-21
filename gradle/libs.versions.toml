@@ -1,9 +1,10 @@
 [versions]
-kotlin = "1.7.20"
-kotlinx-coroutines = "1.6.1"
 limp-lang = "0.5.1-SNAPSHOT"
 limp-interpreter = "0.3.0"
-truthish = "0.6.2"
+#------------------------------
+kotlin = "2.2.10"
+kotlinx-coroutines = "1.10.2"
+truthish = "1.0.3"
 
 [libraries]
 kotlin-test-common = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
