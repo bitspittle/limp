@@ -1,6 +1,6 @@
-![All tests](https://github.com/bitspittle/limp/actions/workflows/gradle-test.yml/badge.svg)
-
 ![version: 0.5.1](https://img.shields.io/badge/limp-v0.5.1-blue)
+![All tests](https://github.com/bitspittle/limp/actions/workflows/gradle-test.yml/badge.svg)
+<br>
 ![kotlin compatibility](https://img.shields.io/badge/kotlin-1.5+-lightgray?logo=kotlin)
 
 # Limp
