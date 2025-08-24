@@ -22,7 +22,7 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test.common)
             implementation(libs.kotlin.test.annotations.common)
-            implementation(libs.truthish.common)
+            implementation(libs.truthish)
             implementation(libs.kotlinx.coroutines.test)
         }
     }

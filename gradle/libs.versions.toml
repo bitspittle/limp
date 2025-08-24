@@ -2,6 +2,7 @@
 limp-lang = "0.5.1-SNAPSHOT"
 limp-interpreter = "0.3.0"
 #------------------------------
+dokka = "2.0.0"
 kotlin = "2.2.10"
 kotlinx-coroutines = "1.10.2"
 truthish = "1.0.3"
@@ -11,9 +12,7 @@ kotlin-test-common = { module = "org.jetbrains.kotlin:kotlin-test", version.ref 
 kotlin-test-annotations-common = { module = "org.jetbrains.kotlin:kotlin-test-annotations-common", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
-truthish-common = { module = "com.varabyte.truthish:truthish", version.ref = "truthish" }
-truthish-jvm = { module = "com.varabyte.truthish:truthish-jvm", version.ref = "truthish" }
-truthish-js = { module = "com.varabyte.truthish:truthish-js", version.ref = "truthish" }
+truthish = { module = "com.varabyte.truthish:truthish", version.ref = "truthish" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
