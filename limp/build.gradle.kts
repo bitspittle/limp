@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.dokka)
     `maven-publish`
 }
 
@@ -26,6 +27,10 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
         }
     }
+}
+
+dokka {
+    moduleName.set("limp")
 }
 
 publishing {
