@@ -25,9 +25,7 @@ class DropMethod(private val random: () -> Random) : Method("drop", 2) {
         val count = env.expectConvert<Int>(params[1]).coerceAtMost(list.size)
 
         val strategy =
-            options["from"]?.let { from ->
-                env.expectConvert<Expr.Identifier>(from).toEnum(ListStrategy.values())
-            } ?: ListStrategy.FRONT
+            options["from"]?.let { from -> env.expectConvert<Expr.Identifier>(from).toEnum() } ?: ListStrategy.FRONT
 
         return when (strategy) {
             ListStrategy.FRONT -> list.drop(count)

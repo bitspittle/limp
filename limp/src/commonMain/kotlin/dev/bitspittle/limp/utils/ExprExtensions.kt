@@ -41,8 +41,15 @@ fun <E: Enum<E>> Expr.Identifier.toEnumOrNull(values: Array<E>): E? {
         ?.first
 }
 
-fun <E: Enum<E>> Expr.Identifier.toEnum(values: Array<E>): E = toEnumOrNull(values)
-    ?: throw EvaluationException(ctx, "Identifier name expected to match one of: ${values.toIdentifierNames().map { it.second }.joinToString()}")
+inline fun <reified E : Enum<E>> Expr.Identifier.toEnum(): E {
+    return toEnumOrNull(enumValues<E>())
+        ?: throw EvaluationException(
+            ctx,
+            "Identifier name expected to match one of: ${
+                enumValues<E>().toIdentifierNames().map<Pair<E, String>, String> { it.second }.joinToString()
+            }"
+        )
+}
 
 fun Expr.Identifier.toValueOrNull(values: Iterable<String>): String? {
     return values

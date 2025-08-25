@@ -29,9 +29,7 @@ class TakeMethod(private val random: () -> Random) : Method("take", 2) {
         }.coerceAtMost(list.size)
 
         val strategy =
-            options["from"]?.let { from ->
-                env.expectConvert<Expr.Identifier>(from).toEnum(ListStrategy.values())
-            } ?: ListStrategy.FRONT
+            options["from"]?.let { from -> env.expectConvert<Expr.Identifier>(from).toEnum() } ?: ListStrategy.FRONT
 
         return when (strategy) {
             ListStrategy.FRONT -> list.take(count)

@@ -23,9 +23,8 @@ class SortedMethod : Method("sorted", 1) {
     ): Any {
         val sorted = mutableListOf<Any>()
 
-        val order = options["order"]?.let { from ->
-            env.expectConvert<Expr.Identifier>(from).toEnum(SortOrder.values())
-        } ?: SortOrder.ASCENDING
+        val order =
+            options["order"]?.let { from -> env.expectConvert<Expr.Identifier>(from).toEnum() } ?: SortOrder.ASCENDING
 
         val comparator = options["with"]?.let { comparator -> env.expectConvert<Expr>(comparator) }
 
