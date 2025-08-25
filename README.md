@@ -7,9 +7,11 @@
 
 This project implements a minimal, dynamic, Lisp-inspired toy language that works in a Kotlin multiplatform context.
 
+(<b>LI</b>sp + <b>M</b>ulti <b>P</b>latform)
+
 ## Trying it out
 
-This project includes a simple interpreter which allows you to experiment with the language live.
+This project includes a simple interpreter which allows you to experiment with the language in an interactive session.
 
 To run it:
 
@@ -19,11 +21,13 @@ $ ./limp-interpreter/build/install/limp-interpreter/bin/limp-interpreter
 ```
 
 Example run:
-```bash
+```
 > + 5 10
 15
+
 > * 5 - 25 15
 50
+
 > + 10 - 20 / 30 0
 
 Method "/" threw an exception while trying to run:
@@ -38,8 +42,10 @@ Method "/" threw an exception while trying to run:
 [8, 9, 10]
 
 > set '$test 123
+
 > $test
 123
+
 > quit
 ```
 
@@ -47,11 +53,11 @@ Method "/" threw an exception while trying to run:
 
 ### Expressions
 
-Limp is designed to be very simple, with a limited number of expression types:
+Limp is designed to be basic, with a limited number of expression types:
 
 - Quoted strings (e.g. `"Hello"`)
 - Integers (e.g. `123` or `-456`)
-- Symbols (e.g. `some-identifier-name` or `+`)
+- Symbols (e.g. `$some-identifier-name` or `+`)
 - Options (e.g. `--param 123`)
 - Blocks (e.g. `(+ 1 2)`)
 - Deferred expressions (e.g. `'symbol` or `'(+ 1 2)`)
@@ -63,24 +69,31 @@ You can also use the `#` symbol to indicate a comment that runs to the end of th
 For parsing simplicity, Limp uses polish (also called *prefix*) notation. That is, addition looks like `(+ 1 2)` instead
 of `(1 + 2)`.
 
-This removes ambiguity if parentheses aren't used. That is, `(* 2 + 5 1)` is always 12, while in a language like Java,
-evaluating `2 * 5 + 1` depends on knowledge of operator precedence, where there it evaluates to 11 unless you
-explicitly add parentheses (as in `2 * (5 + 1)`).
+This removes ambiguity if parentheses aren't used. That is, `* 2 + 5 1` is always 12, while in a language like Java,
+evaluating `2 * 5 + 1` depends on knowledge of operator precedence (where it evaluates to 11 unless you explicitly add
+parentheses, i.e. `2 * (5 + 1)`).
 
 ### Deferred expressions
 
-By default, when you evaluate a Limp expression, every part of the expression is evaluated immediately. However, by
-prefixing parts of the expression with an apostrophe (`'`), it tells the evaluator to postpone evaluation on that for
-later.
+By default, when you provess a Limp expression, every part of the expression is evaluated immediately. However, by
+prefixing parts of the expression with a tick (`'`), it tells the evaluator to postpone evaluation on that part
+for later.
 
 A concrete example is the "set variable" method, which looks like this: `set '$example 123`. If you didn't defer the
-variable name there, instead writing `set $example 123`, the evaluator would try to evaluate the variable immediately
-and barf because it hasn't been defined yet!
+variable name there, instead writing `set $example 123`, the evaluator would try to evaluate the variable (`$example`)
+immediately and die because it hasn't been defined yet!
 
-Another example for deferment is for lambdas. Here's filter: `filter $numbers '(>= $it 0)`.
-This expression means "take in a list of numbers and return a new list which only has positive numbers in it". We don't
-want to run the logic for checking if a number is positive immediately! Instead, we want to let the `filter` method call
-it internally. (It is also up to the `filter` method to correctly define the `$it` variable for us.)
+Deferral lets the `set` method get a hold of the raw expression itself and decide what to do with it (which, in its
+case, is leave it unevaluated but grab its name, which it uses to define a variable in the environment).
+
+Another example where deferment plays a role is with lambdas.
+
+Here's an example using the filter method: `filter $numbers '(>= $it 0)`. This code can be described as "take in a list
+of numbers and return a new list which only has positive numbers in it."
+
+We don't want to run the logic for checking if a number is positive immediately! Instead, we want to let the `filter`
+method call it internally. (It is also up to the `filter` method to correctly define and provide the `$it` variable for
+us.)
 
 ### Differences from Lisp
 
@@ -88,20 +101,21 @@ _This is not a complete list but a glance at some larger deviations._
 
 - Designed for Kotlin Multiplatform
 - Optional parameters for methods
-- Method naming convention taken from Ruby ("dangerous" methods end with a `!`, query methods end with a `?`)
+- Method naming convention from Ruby ("dangerous" methods end with a `!`, query methods end with a `?`)
 - Comments use the `#` symbol
 - Only supported primitives types are _String_ and _Int_
-- No currying support. Methods either take in a fixed number of parameters or they consume the rest of the block
+- No [currying](https://en.wikipedia.org/wiki/Currying) support -- methods either take in a fixed number of parameters or
+  they consume the rest of the block
 
 ## Embedding Limp in your Kotlin project
 
-Limp works by combining two classes, `Environment` and `Evaluator`.
+At the highest level, Limp works by leveraging two classes, `Environment` and `Evaluator`.
 
 ### Environment
 
 An environment is a scoped collection of methods, variables, and converters.
 
-It is trivial to construct one: `val env = Environment()`.
+It is trivial to construct an environment: `val env = Environment()`.
 
 An environment can be used to look up variables and methods by name as well as attempt to convert values (since as a
 dynamic language, all input values come in as `Any` initially).
@@ -110,8 +124,40 @@ When constructed, a new environment is totally empty, but you can use the provid
 `Environment.installDefaults()`, to add a bunch of useful logic, math, and other generally helpful behavior. (You
 probably want to do this!)
 
-Once you've installed the defaults, you are free to add additional methods (and values) to the environment that are
-explicitly designed for your application.
+Once you've installed the defaults, you are free to add additional methods, variables, and converters to the environment
+that are specifically designed for your application.
+
+### Converter
+
+A converter is some logic to automatically convert a value of one type into another, at runtime. This can be useful to
+make some of the methods you define be a bit more flexible.
+
+For example, if you have a method that expects a String, but it gets passed a single character, you can create a
+converter that converts characters into Strings of length one:
+
+```kotlin
+class CharToStringConverter : Converter<String>(String::class) {
+    override fun convert(value: Any): String? {
+        return (value as? Char)?.toString() // Returning a non-null response indicates a successful conversion
+    }
+}
+```
+
+If you have such a converter added to the environment, then with this code:
+
+```kotlin
+val exampleValue: Any = getExampleValue()
+val str = env.expectConvert<String>(exampleValue)
+```
+
+`expectConvert` will work both if it's a `String` (at which point it gets passed through as is) or a `Char` (which gets
+converted to a `String`). An exception with an informative message will get thrown if it is another type (assuming no
+other relevant converters are installed that handle it).
+
+You should be careful with abusing converters, however, as if there are too many, an unexpected conversion might happen
+behind your back.
+
+Later in this document, we will discuss how to temporarily register converters that only live within a running method.
 
 ### Method
 
@@ -119,7 +165,7 @@ You can define methods by subclassing the `Method` base class.
 
 A method is some logic, tagged with a name and specifying the number of arguments it can consume.
 
-For example, the add method takes two arguments (and returns their sum, if the two arguments are integers).
+For example, the add method takes two arguments (and returns their sum if the two arguments are integers).
 
 ```kotlin
 // "Add" is a method represented by the method name "+" and it takes exactly 2 arguments
@@ -135,15 +181,15 @@ class AddMethod : Method("+", 2) {
 #### consumeRest
 
 A method can additionally be configured to consume all remaining arguments in the expression. The latter is useful for a
-method that can take a dynamic number of arguments, say a method like `(list 1 2 3 4 5 6)`.
+method that can take a dynamic number of arguments, say a method like `(sum-of 1 2 3 4 5 6)`.
 
 ```kotlin
-// By passing in 0 for the number of arguments and `consumeRest = true`, this method takes no fixed arguments and then
-// receives any remaining parameters via the `rest` parameter in the `invoke` method.
-class ListMethod : Method("list", 0, consumeRest = true) {
+// By passing in 0 for the number of arguments and `consumeRest = true`, this method takes no
+// fixed arguments and then receives any remaining parameters via the `rest` parameter in the
+// `invoke` method.
+class SumOfMethod : Method("sum-of", 0, consumeRest = true) {
     override suspend fun invoke(/*...*/ rest: List<Any>): Any {
-        // Return a copy of the list; don't assume the originally passed in list won't be modified by Limp
-        return rest.toList()
+        return rest.sumOf { env.expectConvert<Int>(it) }
     }
 }
 ```
@@ -154,10 +200,14 @@ One way that Limp differs from Lisp is support for optional parameters in method
 by `--`.
 
 For example, the `take` method receives a list and a count and takes *count* elements from the list. This essentially
-makes a copy of some subset of the list.
+makes a copy of the relevant subset of the list.
 
 The method also allows you to specify where those items are taken from, using the `--from` optional parameter. If not
 explicitly specified, the method takes items from the front.
+
+For example, `take --from 'back (list 1 2 3 4 5 6) 3` will return a new list `[4, 5, 6]`.
+
+The code for this method is as follows:
 
 ```kotlin
 enum class ListStrategy {
@@ -173,9 +223,9 @@ class TakeMethod(private val random: () -> Random) : Method("take", 2) {
         val count = env.expectConvert<Int>(params[1]).coerceAtMost(list.size)
 
         val strategy =
-            options["from"]?.let { from ->
-                env.expectConvert<Expr.Identifier>(from).toEnum(ListStrategy.values())
-            } ?: ListStrategy.FRONT
+            options["from"]
+                ?.let { from -> env.expectConvert<Expr.Identifier>(from).toEnum() }
+                ?: ListStrategy.FRONT
 
         return when (strategy) {
             ListStrategy.FRONT -> list.take(count)
@@ -185,57 +235,35 @@ class TakeMethod(private val random: () -> Random) : Method("take", 2) {
 }
 ```
 
+> [!NOTE]
+> Note how the optional name in the above example is deferred, i.e. `'front` and `'back`. This is a common pattern you
+> can use for enumerated types. If not deferred, the names `front` and `back` would be evaluated as values, which would
+> crash. Instead, being deferred, we end up consuming it as the raw String itself. The `toEnum` extension method is
+> able to convert those strings to the final, rich-typed enumeration value (or if not possible throw an informative
+> error).
+
 ### Variable
 
 A variable is a value tagged with a name.
 
 You can register these directly into the environment using `env.storeValue("\$example", 123)`. Or, if you added the
-`SetMethod` into the environment, a user can define a variable using syntax like `set '$example 123`
+`SetMethod` into the environment, a user can define a variable using syntax like `set '$example 123`.
 
-By convention, when you define a variable, you should prepend it with a `$`, for readability. However, it's not strictly
-required you do so.
-
-### Converter
-
-A converter is some logic to automatically convert a value of one type into another, at runtime. This can be useful to
-make some of your methods a bit more flexible.
-
-For example, if you have a method that takes in a String, but it gets passed a single character, you can create a
-converter that converts characters into Strings of length one:
-
-```kotlin
-class CharToStringConverter : Converter<String>(String::class) {
-    override fun convert(value: Any): String? {
-        return (value as? Char)?.toString() // Returning a non-null response indicates a successful conversion
-    }
-}
-```
-
-Then, in your method, if you have such a converter added to the environment, then this line:
-
-```kotlin
-val str = env.expectConvert<String>(params[0])
-```
-
-will handle `params[0]` both if it's a `String` (at which point it gets passed through as is) or a `Char` (which gets
-converted to a `String`). An exception with an informative message will get thrown if it's another type (assuming no
-other relevant converters are installed).
-
-You should be careful with abusing converters, however, as if there are too many, an unexpected conversion might happen
-behind your back.
+> [!NOTE]
+> By convention, when you define a variable, you should prepend it with a `$`, for readability. However, it is not
+> strictly required, and simply using `example` is valid, although Limp will print a warning to the console.
 
 ### Scope
 
 Earlier, we wrote that environments are *scoped*.
 
-What this means is you can use `pushScope` (and `popScope`) at any point to introduce (and later remove) a new
-local scope. All methods, variables, and converters registered while this scope is active will be discarded if it is
-ever removed.
+What this means is you can use `pushScope` and `popScope` at any point to introduce and later remove a new local scope.
+All methods, variables, and converters registered while this scope is active will be discarded if it is ever removed.
 
 There is also a convenience `scoped` method that handles calling `pushScope` and `popScope` for you (even if an
 exception gets thrown in the middle). Using it is preferred over calling push and pop directly.
 
-Scoping is a very useful feature when you are implementing the logic of a method that wants to support hyper-local type
+Scoping is an invaluable feature when you are implementing the logic of a method that wants to support hyper-local type
 conversions. Recalling the `CharToStringConverter` example from the previous section, here's how the `LowerMethod`
 (which converts strings to their lowercase version) is implemented:
 
@@ -258,9 +286,9 @@ Limp defines a special character, called the `Placeholder`, represented by `_`.
 On its own, it is an inert thing, but you can define methods which check if a `Placeholder` was passed in as an
 argument. If so, it should indicate that the user wants to use some reasonable, default value.
 
-Limp also provides a `PlacholderConverter` class you can use to accomplish this default behavior in your own method.
+Limp also provides a `PlacholderConverter` class you can use to achieve this default behavior in your own method.
 
-For example, the `IntRange` method uses this to allow people to shortcut passing in an upper bound value:
+For example, the `IntRange` method uses this to allow people to shortcut passing in an upper-bound value:
 
 ```kotlin
 class IntRangeMethod : Method("..", 2) {
@@ -277,20 +305,19 @@ class IntRangeMethod : Method("..", 2) {
 ```
 
 With this placeholder in place, users can express they want a range with an upper bound as high as possible. Using
-`.. 5 _` becomes a shorthand syntax allowing you to avoid writing something hacky like `.. 5 99999` or something
-more verbose like `.. 5 (size $some-list)`.
+`.. 5 _` becomes a shorthand syntax allowing you to avoid writing something hacky like `.. 5 99999`.
 
 ### Evaluator
 
-An evaluator is a class which is responsible for taking a code statement and an accompanying environment, and
+An evaluator is a class that is responsible for taking a code statement and an accompanying environment and
 then processing the two together to produce a result.
 
-Most of the time you can just instance an evaluator anywhere you have an environment and fire its `evaluate` method:
+Most of the time it's enough to instance an evaluator anywhere you have an environment and fire its `evaluate` method:
 
 ```kotlin
 val env: Environment = createAndInitializeEnvironment()
 val evaluator = Evaluator()
-evaluator.evaluate(env, "+ 1 2") // returns 3 (as `Any`)
+val result = evaluator.evaluate(env, "+ 1 2") // returns 3 (as `Any`)
 ```
 
 This will both parse the code AND run through the processed result, pulling values out of and writing others back into
@@ -300,8 +327,9 @@ If it fails at any point, it will throw an `EvaluationException` explaining what
 
 #### Pre-parsing expressions
 
-Although evaluators handle parsing for you, it's trivial to parse a limp expression on your own. Just use the
-`Expr.parse` method:
+Although evaluators handle parsing for you, it's trivial to parse a limp expression on your own.
+
+Use the `Expr.parse` method:
 
 ```kotlin
 val compiled = Expr.parse("+ 1 2")
